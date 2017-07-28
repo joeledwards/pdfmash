@@ -51,11 +51,14 @@ class PdfMash extends JFrame {
   }
 
   // Open a prompt to select a PDF file.
-  private def selectPdf(): Option[File] = {
+  private def selectPdf(save: Boolean): Option[File] = {
     val chooser = new JFileChooser()
     val filter = new FileNameExtensionFilter("PDF Files", "pdf")
     chooser.setFileFilter(filter)
-    chooser.showOpenDialog(this) match {
+    (save match {
+      case true => chooser.showSaveDialog(this)
+      case false => chooser.showOpenDialog(this)
+    }) match {
       case JFileChooser.APPROVE_OPTION => Some(chooser.getSelectedFile())
       case _ => None
     }
@@ -63,7 +66,7 @@ class PdfMash extends JFrame {
 
   // Prompt the user to select an input PDF.
   private def selectInputPdf(): Unit = {
-    selectPdf match {
+    selectPdf(false) match {
       case None => println("No input file selected.")
       case Some(pdf) => {
         println(s"Adding input from ${pdf.getName}")
@@ -74,7 +77,7 @@ class PdfMash extends JFrame {
 
   // Prompt the user to select the output PDF location.
   private def selectOutputPdf(): Unit = {
-    selectPdf match {
+    selectPdf(true) match {
       case None => println("No output file selected.")
       case Some(pdf) => {
         println(s"Writing output to ${pdf.getName}")

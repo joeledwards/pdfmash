@@ -1,9 +1,12 @@
 package com.helperhub.pdfmash
 
-import java.awt.{BorderLayout, Dimension}
+import java.awt.{BorderLayout, Color, Dimension}
 import java.io.File
 import javax.swing.filechooser.FileNameExtensionFilter
-import javax.swing.{JButton, JFileChooser, JFrame, JPanel}
+import javax.swing._
+import javax.swing.event.{DocumentEvent, DocumentListener}
+
+import org.apache.pdfbox.pdmodel.PDDocument
 
 import scala.util.Try
 
@@ -17,22 +20,72 @@ import scala.util.Try
   * @since 2017-07-27.
   */
 class PdfMash extends JFrame {
-  private val addPdfButton = new JButton("Add PDF")
-  private val writePdfButton = new JButton("Write PDF")
   private val mainPanel = new JPanel(new BorderLayout)
+
+  private val controlBox = new JPanel(new BorderLayout)
+  private val addPdfButton = new JButton("Add PDF")
+  private val pagesTextField = new JTextField()
+
+  private val writePdfButton = new JButton("Write PDF")
   private val inputPdfList = new InputPdfList
+
+  private var activePdf: Option[InputPdf] = None
 
   // Layout the UI
   private def init: PdfMash = {
     // Input file controls.
-    mainPanel.add(addPdfButton, BorderLayout.NORTH)
+    controlBox.add(addPdfButton, BorderLayout.NORTH)
     addPdfButton.addActionListener(_ => {
       println("Add PDF Button clicked.")
       selectInputPdf()
     })
 
-    //Input file list
+    controlBox.add(pagesTextField, BorderLayout.SOUTH)
+    pagesTextField.setEditable(false)
+    pagesTextField.getDocument.addDocumentListener(new DocumentListener {
+      override def removeUpdate(e: DocumentEvent): Unit = updated(e)
+      override def changedUpdate(e: DocumentEvent): Unit = updated(e)
+      override def insertUpdate(e: DocumentEvent): Unit = updated(e)
+      private def updated(e: DocumentEvent): Unit = {
+        val len = e.getDocument.getLength
+        val doc = e.getDocument.getText(0, len)
+        val range = Utils.parseRange(doc).toList
+        val max = range.fold(0)((a, b) => if (a < b) b else a )
+        println(s"range.isEmpty = ${range.isEmpty}")
+        println(s"range.max = ${max}")
+        val rangeValid = activePdf.map(p => !range.isEmpty && max <= p.pageCount).getOrElse(false)
+
+        if (rangeValid) {
+          pagesTextField.setBackground(Color.WHITE)
+          activePdf.foreach(_.setPages(range))
+          inputPdfList.changed()
+          println(s"Range: ${Utils.formatRange(range)}")
+        } else {
+          pagesTextField.setBackground(Color.YELLOW)
+        }
+      }
+    })
+
+    mainPanel.add(controlBox, BorderLayout.NORTH)
+
+    // Input file list
     mainPanel.add(inputPdfList, BorderLayout.CENTER)
+    inputPdfList.onSelect {
+      case Some(input) => {
+        SwingUtilities.invokeLater { () =>
+          activePdf = Some(input)
+          pagesTextField.setText(Utils.formatRange(input.getPages))
+          pagesTextField.setEditable(true)
+        }
+      }
+      case None => {
+        SwingUtilities.invokeLater { () =>
+          activePdf = None
+          pagesTextField.setEditable(false)
+          pagesTextField.setText("")
+        }
+      }
+    }
 
     // Output file controls.
     mainPanel.add(writePdfButton, BorderLayout.SOUTH)
@@ -81,12 +134,17 @@ class PdfMash extends JFrame {
       case None => println("No output file selected.")
       case Some(pdf) => {
         println(s"Writing output to ${pdf.getName}")
-        writePdf()
+        writePdf(pdf)
       }
     }
   }
 
-  private def writePdf(): Unit = {
+  private def writePdf(pdf: File): Unit = {
+    val docs = inputPdfList.pdfs.map { inputPdf =>
+      val doc = PDDocument.load(inputPdf.getFile)
+      doc
+    }
+
 
   }
 

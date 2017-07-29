@@ -3,6 +3,7 @@ package com.helperhub.pdfmash
 import java.io.File
 import java.util
 import javax.swing.table.AbstractTableModel
+
 import scala.collection.JavaConverters._
 
 /**
@@ -11,6 +12,8 @@ import scala.collection.JavaConverters._
 class PdfListModel extends AbstractTableModel {
   private val data = new util.LinkedHashMap[File, InputPdf]
   private var dataList: Option[List[InputPdf]] = None
+
+
 
   // Add a new PDF.
   def addPdf(pdf: File): Boolean = {

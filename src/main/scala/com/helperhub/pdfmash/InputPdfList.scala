@@ -32,15 +32,17 @@ class InputPdfList extends JPanel() {
   table.setDefaultRenderer(classOf[Object], InputPdfCellRenderer)
   table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
   table.getSelectionModel.addListSelectionListener { _ =>
-    table.getSelectedRow match {
-      case row if row >= 0 => {
-        println(s"Row ${row} is selected.")
-        val input = dataModel.getInputs(row)
-        selectHandler.foreach(_(Some(input)))
-      }
-      case _ => {
-        println(s"No row selected.")
-        selectHandler.foreach(_(None))
+    if (table.getSelectedColumn == 0) {
+      table.getSelectedRow match {
+        case row if row >= 0 => {
+          println(s"Row ${row} is selected.")
+          val input = dataModel.getInputs(row)
+          selectHandler.foreach(_(Some(input)))
+        }
+        case _ => {
+          println(s"No row selected.")
+          selectHandler.foreach(_(None))
+        }
       }
     }
   }
@@ -56,6 +58,6 @@ class InputPdfList extends JPanel() {
   // Fetch all of the input PDFs.
   def pdfs: List[InputPdf] = dataModel.getInputs
 
-  // Notify of changes to the input list.
-  def changed(): Unit = dataModel.fireTableDataChanged()
+  // Adjust the selected pages for a PDF.
+  def updatePdfPages(pdf: File, pages: List[Int]): Boolean = dataModel.updatePdfPages(pdf, pages)
 }

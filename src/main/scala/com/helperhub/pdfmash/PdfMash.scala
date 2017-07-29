@@ -58,7 +58,6 @@ class PdfMash extends JFrame {
         if (rangeValid) {
           pagesTextField.setBackground(Color.WHITE)
           activePdf.foreach(_.setPages(range))
-          inputPdfList.changed()
           println(s"Range: ${Utils.formatRange(range)}")
         } else {
           pagesTextField.setBackground(Color.YELLOW)

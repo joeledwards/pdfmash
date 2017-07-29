@@ -12,8 +12,7 @@ import scala.collection.JavaConverters._
 class PdfListModel extends AbstractTableModel {
   private val data = new util.LinkedHashMap[File, InputPdf]
   private var dataList: Option[List[InputPdf]] = None
-
-
+  private var indexToInput: Option[Map[InputPdf, Int]] = None
 
   // Add a new PDF.
   def addPdf(pdf: File): Boolean = {
@@ -56,13 +55,7 @@ class PdfListModel extends AbstractTableModel {
     if (columnIndex > getColumnCount) {
       throw new IndexOutOfBoundsException()
     } else {
-      val row = (dataList match {
-        case Some(list) => list
-        case None => {
-          dataList = Some(data.values.asScala.toList)
-          dataList.get
-        }
-      })(rowIndex)
+      val row = getInputs(rowIndex)
 
       columnIndex match {
         case 0 => row.getFile
@@ -77,7 +70,20 @@ class PdfListModel extends AbstractTableModel {
     case Some(list) => list
     case None => {
       dataList = Some(data.values.asScala.toList)
+      indexToInput = dataList.map(_.zipWithIndex.toMap)
       dataList.get
     }
+  }
+
+  // Update the pages associated with the identified PDF.
+  def updatePdfPages(pdf: File, pages: List[Int]): Boolean = {
+    Option(data.get(pdf)) flatMap { input =>
+      getInputs
+      indexToInput.flatMap(_.get(input)) map { index =>
+        input.setPages(pages)
+        fireTableCellUpdated(index, 1)
+        true
+      }
+    } getOrElse(false)
   }
 }

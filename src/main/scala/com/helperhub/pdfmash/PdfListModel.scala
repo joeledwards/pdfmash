@@ -81,6 +81,7 @@ class PdfListModel extends AbstractTableModel {
       getInputs
       indexToInput.flatMap(_.get(input)) map { index =>
         input.setPages(pages)
+        //fireTableRowsUpdated(index, index)
         fireTableCellUpdated(index, 1)
         true
       }

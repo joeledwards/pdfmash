@@ -9,6 +9,7 @@ import javax.swing.event.{DocumentEvent, DocumentListener}
 import org.apache.pdfbox.pdmodel.PDDocument
 
 import scala.util.Try
+import scala.collection.JavaConverters._
 
 /**
   * This is the main window of the Swing UI. Multiple input PDFs can be
@@ -53,11 +54,14 @@ class PdfMash extends JFrame {
         val max = range.fold(0)((a, b) => if (a < b) b else a )
         println(s"range.isEmpty = ${range.isEmpty}")
         println(s"range.max = ${max}")
+
+        // Validate the range configuration for the selected PDF.
         val rangeValid = activePdf.map(p => !range.isEmpty && max <= p.pageCount).getOrElse(false)
 
         if (rangeValid) {
+          // Update the range selection in the list.
           pagesTextField.setBackground(Color.WHITE)
-          activePdf.foreach(_.setPages(range))
+          activePdf.foreach(pdf => inputPdfList.updatePdfPages(pdf.getFile, range))
           println(s"Range: ${Utils.formatRange(range)}")
         } else {
           pagesTextField.setBackground(Color.YELLOW)
@@ -139,12 +143,19 @@ class PdfMash extends JFrame {
   }
 
   private def writePdf(pdf: File): Unit = {
-    val docs = inputPdfList.pdfs.map { inputPdf =>
-      val doc = PDDocument.load(inputPdf.getFile)
-      doc
+    val doc: PDDocument = inputPdfList.pdfs.map { inputPdf =>
+      PDDocument.load(inputPdf.getFile)
+    } reduce { (allDoc, nextDoc) =>
+      // TODO: filter pages based on selection
+
+      nextDoc.getPages.iterator.asScala.foreach { page =>
+        allDoc.addPage(page)
+      }
+
+      allDoc
     }
 
-
+    doc.save(pdf)
   }
 
   // Launch the program

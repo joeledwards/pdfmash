@@ -9,7 +9,6 @@ import javax.swing.event.{DocumentEvent, DocumentListener}
 import org.apache.pdfbox.pdmodel.PDDocument
 
 import scala.util.Try
-import scala.collection.JavaConverters._
 
 /**
   * This is the main window of the Swing UI. Multiple input PDFs can be
@@ -25,6 +24,9 @@ class PdfMash extends JFrame {
 
   private val controlBox = new JPanel(new BorderLayout)
   private val addPdfButton = new JButton("Add PDF")
+
+  private val pagesPanel = new JPanel(new BorderLayout)
+  private val pagesLabel = new JLabel("Page Selection:")
   private val pagesTextField = new JTextField()
 
   private val writePdfButton = new JButton("Write PDF")
@@ -41,7 +43,9 @@ class PdfMash extends JFrame {
       selectInputPdf()
     })
 
-    controlBox.add(pagesTextField, BorderLayout.SOUTH)
+    pagesPanel.add(pagesLabel, BorderLayout.WEST)
+    pagesPanel.add(pagesTextField, BorderLayout.CENTER)
+    controlBox.add(pagesPanel, BorderLayout.SOUTH)
     pagesTextField.setEditable(false)
     pagesTextField.getDocument.addDocumentListener(new DocumentListener {
       override def removeUpdate(e: DocumentEvent): Unit = updated(e)
@@ -143,26 +147,25 @@ class PdfMash extends JFrame {
   }
 
   private def writePdf(pdf: File): Unit = {
-    val doc: PDDocument = inputPdfList.pdfs.map { inputPdf =>
-      PDDocument.load(inputPdf.getFile)
-    } reduce { (allDoc, nextDoc) =>
-      // TODO: filter pages based on selection
+    val combinedDoc = new PDDocument
 
-      nextDoc.getPages.iterator.asScala.foreach { page =>
-        allDoc.addPage(page)
+    inputPdfList.pdfs.map { inputPdf =>
+      (inputPdf, PDDocument.load(inputPdf.getFile))
+    } foreach { case (pdf, doc) =>
+      pdf.getPages.foreach { page =>
+        val index = page - 1
+        combinedDoc.addPage(doc.getPage(index))
       }
-
-      allDoc
     }
 
-    doc.save(pdf)
+    combinedDoc.save(pdf)
   }
 
   // Launch the program
   def run: PdfMash = {
     init
 
-    this.setVisible(true)
+    setVisible(true)
 
     this
   }

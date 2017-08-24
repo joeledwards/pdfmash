@@ -24,6 +24,7 @@ object Utils {
       case Success(r) => r
       case Failure(e) => {
         println(s"Range parse error: ${e}")
+        e.printStackTrace()
         Seq.empty
       }
     }

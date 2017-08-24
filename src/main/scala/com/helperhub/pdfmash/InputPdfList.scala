@@ -1,6 +1,6 @@
 package com.helperhub.pdfmash
 
-import java.awt.BorderLayout
+import java.awt.{BorderLayout, Color}
 import java.io.File
 import javax.swing.{JPanel, JScrollPane, JTable, ListSelectionModel}
 
@@ -13,6 +13,8 @@ class InputPdfList extends JPanel() {
 
   val dataModel = new PdfListModel
   val table = new JTable(dataModel)
+  table.setSelectionBackground(Color.ORANGE)
+  table.setSelectionForeground(Color.WHITE)
   val pane = new JScrollPane(table)
 
   type SelectHandler = (Option[InputPdf]) => Unit

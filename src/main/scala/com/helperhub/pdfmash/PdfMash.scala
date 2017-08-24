@@ -1,6 +1,6 @@
 package com.helperhub.pdfmash
 
-import java.awt.{BorderLayout, Color, Dimension}
+import java.awt.{BorderLayout, Color, Dimension, FileDialog, Frame}
 import java.io.File
 import javax.swing.filechooser.FileNameExtensionFilter
 import javax.swing._
@@ -36,47 +36,50 @@ class PdfMash extends JFrame {
 
   // Layout the UI
   private def init: PdfMash = {
+    try {
+      UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+    } catch {
+      case error: Throwable => error.printStackTrace()
+    }
+
     // Input file controls.
-    controlBox.add(addPdfButton, BorderLayout.NORTH)
+    controlBox.add(Box(addPdfButton, top=5), BorderLayout.NORTH)
     addPdfButton.addActionListener(_ => {
       println("Add PDF Button clicked.")
       selectInputPdf()
     })
 
-    pagesPanel.add(pagesLabel, BorderLayout.WEST)
-    pagesPanel.add(pagesTextField, BorderLayout.CENTER)
-    controlBox.add(pagesPanel, BorderLayout.SOUTH)
+    pagesPanel.add(Box(pagesLabel, left=6), BorderLayout.WEST)
+    pagesPanel.add(Box(pagesTextField, left=5, right=3), BorderLayout.CENTER)
+    controlBox.add(Box(pagesPanel), BorderLayout.SOUTH)
     pagesTextField.setEditable(false)
     pagesTextField.getDocument.addDocumentListener(new DocumentListener {
       override def removeUpdate(e: DocumentEvent): Unit = updated(e)
       override def changedUpdate(e: DocumentEvent): Unit = updated(e)
       override def insertUpdate(e: DocumentEvent): Unit = updated(e)
       private def updated(e: DocumentEvent): Unit = {
-        val len = e.getDocument.getLength
-        val doc = e.getDocument.getText(0, len)
-        val range = Utils.parseRange(doc).toList
-        val max = range.fold(0)((a, b) => if (a < b) b else a )
-        println(s"range.isEmpty = ${range.isEmpty}")
-        println(s"range.max = ${max}")
+        val textLength = e.getDocument.getLength
+        val text = e.getDocument.getText(0, textLength)
+        val range = Utils.parseRange(text).toList
+        val maxPage = range.fold(0)((a, b) => if (a < b) b else a )
 
         // Validate the range configuration for the selected PDF.
-        val rangeValid = activePdf.map(p => !range.isEmpty && max <= p.pageCount).getOrElse(false)
+        val rangeValid = activePdf.map(p => !range.isEmpty && maxPage <= p.pageCount).getOrElse(false)
 
         if (rangeValid) {
           // Update the range selection in the list.
           pagesTextField.setBackground(Color.WHITE)
           activePdf.foreach(pdf => inputPdfList.updatePdfPages(pdf.getFile, range))
-          println(s"Range: ${Utils.formatRange(range)}")
         } else {
           pagesTextField.setBackground(Color.YELLOW)
         }
       }
     })
 
-    mainPanel.add(controlBox, BorderLayout.NORTH)
+    mainPanel.add(Box(controlBox), BorderLayout.NORTH)
 
     // Input file list
-    mainPanel.add(inputPdfList, BorderLayout.CENTER)
+    mainPanel.add(Box(inputPdfList, top=5, left=6, right=6), BorderLayout.CENTER)
     inputPdfList.onSelect {
       case Some(input) => {
         SwingUtilities.invokeLater { () =>
@@ -95,7 +98,7 @@ class PdfMash extends JFrame {
     }
 
     // Output file controls.
-    mainPanel.add(writePdfButton, BorderLayout.SOUTH)
+    mainPanel.add(Box(writePdfButton, top=3, bottom=2), BorderLayout.SOUTH)
     writePdfButton.addActionListener(_ => {
       println("Write PDF Button clicked.")
       selectOutputPdf()
@@ -103,24 +106,32 @@ class PdfMash extends JFrame {
 
     // Setup and configure the main window.
     this.add(mainPanel)
-    this.setPreferredSize(new Dimension(600, 600))
+    this.setPreferredSize(new Dimension(800, 600))
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
     this.pack
 
     this
   }
 
-  // Open a prompt to select a PDF file.
+  // Open a prompt to select a PDF file using the system's native file selection dialog.
   private def selectPdf(save: Boolean): Option[File] = {
-    val chooser = new JFileChooser()
-    val filter = new FileNameExtensionFilter("PDF Files", "pdf")
-    chooser.setFileFilter(filter)
-    (save match {
-      case true => chooser.showSaveDialog(this)
-      case false => chooser.showOpenDialog(this)
-    }) match {
-      case JFileChooser.APPROVE_OPTION => Some(chooser.getSelectedFile())
-      case _ => None
+    val (mode, title) = save match {
+      case true => (FileDialog.SAVE, "Save PDF")
+      case false => (FileDialog.LOAD, "Add PDF")
+    }
+
+    val dialog = new FileDialog(null.asInstanceOf[Frame], title,  mode)
+    dialog.setVisible(true)
+    val directory = dialog.getDirectory
+    val filename = dialog.getFile
+
+    if (
+      directory == null || filename == null ||
+      directory.trim().equals("") || filename.trim().equals("")
+    ) {
+      None
+    } else {
+      Some(new File(directory, filename))
     }
   }
 
@@ -142,6 +153,9 @@ class PdfMash extends JFrame {
       case Some(pdf) => {
         println(s"Writing output to ${pdf.getName}")
         writePdf(pdf)
+        JOptionPane.showMessageDialog(
+          writePdfButton, "PDF write completed successfully.", "PDF Written", JOptionPane.INFORMATION_MESSAGE
+        )
       }
     }
   }

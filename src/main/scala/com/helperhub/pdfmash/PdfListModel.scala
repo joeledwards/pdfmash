@@ -58,7 +58,7 @@ class PdfListModel extends AbstractTableModel {
       val row = getInputs(rowIndex)
 
       columnIndex match {
-        case 0 => row.getFile
+        case 0 => row
         case 1 => row.getPages
         case _ => throw new IndexOutOfBoundsException
       }

@@ -1,6 +1,6 @@
 package com.helperhub.pdfmash
 
-import java.awt.{BorderLayout, Color, Dimension, FileDialog, Frame}
+import java.awt.{BorderLayout, Color, Dimension, FileDialog, FlowLayout, Frame}
 import java.io.File
 import javax.swing.filechooser.FileNameExtensionFilter
 import javax.swing._
@@ -23,13 +23,13 @@ class PdfMash extends JFrame {
   private val mainPanel = new JPanel(new BorderLayout)
 
   private val controlBox = new JPanel(new BorderLayout)
-  private val addPdfButton = new JButton("Add PDF")
+  private val addPdfButton = new JButton("Add PDF", Icons.plus(24, 24))
 
   private val pagesPanel = new JPanel(new BorderLayout)
   private val pagesLabel = new JLabel("Page Selection:")
   private val pagesTextField = new JTextField()
 
-  private val writePdfButton = new JButton("Write PDF")
+  private val writePdfButton = new JButton("Write PDF", Icons.pen(24, 24))
   private val inputPdfList = new InputPdfList
 
   private var activePdf: Option[InputPdf] = None
@@ -42,8 +42,11 @@ class PdfMash extends JFrame {
       case error: Throwable => error.printStackTrace()
     }
 
+    setIconImage(Icons.pdf().getImage)
+    setTitle("PDF Mash")
+
     // Input file controls.
-    controlBox.add(Box(addPdfButton, top=5), BorderLayout.NORTH)
+    controlBox.add(Box(addPdfButton, top=5, right=5, left=5), BorderLayout.NORTH)
     addPdfButton.addActionListener(_ => {
       println("Add PDF Button clicked.")
       selectInputPdf()
@@ -98,7 +101,7 @@ class PdfMash extends JFrame {
     }
 
     // Output file controls.
-    mainPanel.add(Box(writePdfButton, top=3, bottom=2), BorderLayout.SOUTH)
+    mainPanel.add(Box(writePdfButton, top=3, right=5, left=5, bottom=2), BorderLayout.SOUTH)
     writePdfButton.addActionListener(_ => {
       println("Write PDF Button clicked.")
       selectOutputPdf()
@@ -121,6 +124,7 @@ class PdfMash extends JFrame {
     }
 
     val dialog = new FileDialog(null.asInstanceOf[Frame], title,  mode)
+    dialog.setFile("*.pdf")
     dialog.setVisible(true)
     val directory = dialog.getDirectory
     val filename = dialog.getFile
